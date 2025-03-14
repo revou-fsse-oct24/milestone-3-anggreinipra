@@ -30,10 +30,6 @@ The RevoBank API includes the following features:
 - **GET /transactions/:id**: Retrieves details of a specific transaction by its ID.
 - **POST /transactions**: Initiates a new transaction (deposit, withdrawal, or transfer).
 
-### **Additional Features:**
-
-- **GET /static/<path:filename>**: Serves static files like images, stylesheets, or scripts.
-
 ## Installation and Setup Instructions
 
 Follow the steps below to set up the RevoBank API on your local machine:
@@ -41,7 +37,7 @@ Follow the steps below to set up the RevoBank API on your local machine:
 ### Prerequisites:
 
 - Python 3.7 or above
-- `pip` (Python's package installer)
+- [UV](https://docs.astral.sh/uv/getting-started/installation/) (Python's package installer)
 
 ### Step 1: Clone the Repository
 
@@ -86,191 +82,168 @@ python main.py
 
 The app will be available at http://127.0.0.1:5000/.
 
-Step 5: Test the API
+### Step 5: Test the API
+
 You can use Postman or any HTTP client to interact with the API at the base URL http://127.0.0.1:5000/. Refer to the API documentation below for details on how to use each endpoint.
 
-API Usage Documentation
-User Management Endpoints
-POST /users/register
-Request Body:
+#### API Usage Documentation
 
-json
-Copy
-Edit
+A. User Management Endpoints<br>
+
+1. POST /users/register
+
+```
+Request body:
 {
-"username": "JohnDoe",
-"email": "johndoe@example.com",
-"password": "password123"
+"username": "Layla",
+"email": "LaylaMM@example.com",
+"password": "marksman123"
 }
-Response:
 
-Success (201 Created):
-json
-Copy
-Edit
+Response: -- Success (201 Created):
 {
 "id": 1,
 "username": "JohnDoe",
 "email": "johndoe@example.com"
 }
+
 Error (400 Bad Request):
-json
-Copy
-Edit
 {
 "error": "Email already registered"
 }
-GET /users/me
+```
+
+2. GET /users/me
+
+```
 Request Header:
-
 User-ID: The ID of the currently logged-in user.
-Response:
 
-Success (200 OK):
-json
-Copy
-Edit
+Response: -- Success (200 OK):
 {
 "id": 1,
 "username": "JohnDoe",
 "email": "johndoe@example.com"
 }
-PUT /users/me
-Request Body:
+```
 
-json
-Copy
-Edit
+3. PUT /users/me
+
+```
+Request Body:
 {
 "username": "JohnDoeUpdated",
 "password": "newpassword123"
 }
-Response:
 
-Success (200 OK):
-json
-Copy
-Edit
+Response: -- Success (200 OK):
 {
 "id": 1,
 "username": "JohnDoeUpdated",
 "email": "johndoe@example.com"
 }
-Account Management Endpoints
-POST /accounts
-Request Body:
+```
 
-json
-Copy
-Edit
+B. Account Management Endpoints<br>
+
+1. POST /accounts
+
+```
+Request Body:
 {
 "account_type": "checking",
 "balance": 500
 }
-Response:
 
-Success (201 Created):
-json
-Copy
-Edit
+Response: -- Success (201 Created):
 {
 "id": 1,
 "account_type": "checking",
 "balance": 500
 }
-GET /accounts/:id
-Request Parameters:
+```
 
+2. GET /accounts/:id
+
+```
+Request Parameters:
 id: The ID of the account to retrieve.
-Response:
 
-Success (200 OK):
-json
-Copy
-Edit
+Response: -- Success (200 OK):
 {
 "id": 1,
 "account_type": "checking",
 "balance": 500
 }
-PUT /accounts/:id
-Request Body:
+```
 
-json
-Copy
-Edit
+3. PUT /accounts/:id
+
+```
+Request Body:
 {
 "balance": 1000
 }
-Response:
 
-Success (200 OK):
-json
-Copy
-Edit
+Response: -- Success (200 OK):
 {
 "id": 1,
 "account_type": "checking",
 "balance": 1000
 }
-DELETE /accounts/:id
+```
+
+4. DELETE /accounts/:id
+
+```
 Request Parameters:
-
 id: The ID of the account to delete.
-Response:
 
-Success (200 OK):
-json
-Copy
-Edit
+Response: -- Success (200 OK):
 {
 "message": "Account deleted successfully"
 }
-Transaction Management Endpoints
-POST /transactions
-Request Body:
+```
 
-json
-Copy
-Edit
+C. Transaction Management Endpoints<br>
+
+1. POST /transactions
+
+```
+Request Body:
 {
 "transaction_type": "deposit",
 "account_id": 1,
 "amount": 200
 }
-Response:
 
-Success (201 Created):
-json
-Copy
-Edit
+Response: -- Success (201 Created):
 {
 "transaction_id": 1,
 "transaction_type": "deposit",
 "amount": 200
 }
-GET /transactions/:id
+```
+
+2. GET /transactions/:id
+
+```
 Request Parameters:
-
 id: The ID of the transaction to retrieve.
-Response:
 
-Success (200 OK):
-json
-Copy
-Edit
+Response: -- Success (200 OK):
 {
 "transaction_id": 1,
 "transaction_type": "deposit",
 "amount": 200,
 "account_id": 1
 }
-GET /transactions
-Response:
-Success (200 OK):
-json
-Copy
-Edit
+```
+
+3. GET /transactions
+
+```
+Response: -- Success (200 OK):
 [
 {
 "transaction_id": 1,
@@ -279,18 +252,18 @@ Edit
 "account_id": 1
 }
 ]
-Contributing
+```
+
+---
+
+### Contributing
+
 If you would like to contribute to RevoBank, feel free to fork the repository and submit a pull request. Please ensure your code follows the existing style guidelines and includes appropriate tests.
 
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
+### License
 
-pgsql
-Copy
-Edit
+Used for submission Assignment Module 7, RevoU FSSE Program.
 
-This markdown provides the full documentation in a structured and easy-to-read format, suitable for inclusion in your project's repository.
+---
 
-```
-
-```
+© 2025 RevoBank API. All Rights Reserved. Created by @anggreinipra
