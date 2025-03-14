@@ -1,143 +1,296 @@
-# **RevoBank Activity Diagrams _(User Authentication and Transaction Handling)_**
+# RevoBank API Documentation
 
-## **Introduction**
+## Overview
 
-This repository contains two **UML Activity Diagrams** for RevoBank:
+RevoBank API is a RESTful web service built with Flask to manage a banking system. This API enables features for user management, account management, and transaction management without relying on an SQL database. Instead, all data is stored and handled via in-memory models. The API provides endpoints for creating users, managing their profiles, creating accounts, and handling transactions like deposits, withdrawals, and transfers.
 
-1. **User Authentication Process**
-2. **Transaction Handling Process**
+This project aims to help users easily create and manage their bank accounts, track transactions, and provide a clear interface for interacting with the system.
 
-Both diagrams describe the workflows involved in authenticating users and handling various types of transactions in a system.
+## Features Implemented
 
----
+The RevoBank API includes the following features:
 
-## **1. User Authentication Activity Diagram**
+### **User Management:**
 
-### **Purpose:**
+- **POST /users/register**: Allows the creation of a new user account.
+- **GET /users/me**: Retrieves the profile of the currently logged-in user.
+- **PUT /users/me**: Updates the profile information of the currently logged-in user.
 
-The User Authentication Activity Diagram illustrates the steps involved in authenticating a user, from login to error handling and token generation.
+### **Account Management:**
 
-### **Steps:**
+- **GET /accounts**: Retrieves a list of all accounts.
+- **GET /accounts/:id**: Retrieves details of a specific account by its ID.
+- **POST /accounts**: Creates a new account.
+- **PUT /accounts/:id**: Updates details of an existing account.
+- **DELETE /accounts/:id**: Deletes an account.
 
-1. **User Login:**
-   - **Action:** User enters their username and password.
-2. **Password Verification:**
-   - **Action:** Authentication Service verifies the credentials.
-   - **Decision:** Are the credentials valid?
-     - **Yes:** Proceed to Token Generation.
-     - **No:** Return to "User Login" with an error message.
-3. **Error Handling:**
-   - **Action:** Display error message to the user.
-   - **Decision:** Does the user retry the login?
-     - **Yes:** Go back to "User Login."
-     - **No:** End the process.
-4. **Token Generation:**
-   - **Action:** Authentication Service generates a session token.
-   - **Outcome:** User is granted access with the token.
+### **Transaction Management:**
 
----
+- **GET /transactions**: Retrieves a list of all transactions.
+- **GET /transactions/:id**: Retrieves details of a specific transaction by its ID.
+- **POST /transactions**: Initiates a new transaction (deposit, withdrawal, or transfer).
 
-## **2. Transaction Handling Activity Diagram**
+### **Additional Features:**
 
-### **Purpose:**
+- **GET /static/<path:filename>**: Serves static files like images, stylesheets, or scripts.
 
-The Transaction Handling Activity Diagram details the steps involved in initiating and processing a transaction, including actions like checking balance, transferring funds, instant payments, and top-ups for e-wallets.
+## Installation and Setup Instructions
 
-### **Steps:**
+Follow the steps below to set up the RevoBank API on your local machine:
 
-#### **Initiate Transaction:**
+### Prerequisites:
 
-- **Action:** User chooses a transaction type (e.g., check balance, transfer, instant payment, top-up e-wallet).
+- Python 3.7 or above
+- `pip` (Python's package installer)
 
-#### **Select Transaction Type:**
+### Step 1: Clone the Repository
 
-**Action:** User selects a transaction option:
+```bash
+git clone https://github.com/revou-fsse-oct24/milestone-3-anggreinipra.git
+cd Module 7 - flask python
+```
 
-1. **Check Balance**
+### Step 2: Set Up Virtual Environment
 
-   - **Action:** User selects "Check Balance."
-   - **Transaction Service:** Queries the banking system for the current account balance.
-   - **Outcome:** The system displays the current balance to the user.
-   - **Decision:** Does the user wish to proceed with another transaction?
-     - **Yes:** Go back to "Select Transaction Type."
-     - **No:** End the process.
+Create a virtual environment to manage the project's dependencies.
 
-2. **Transfer:**
+```bash
+python -m venv venv
+```
 
-   - **Action:** User selects "Transfer" and enters transfer details (recipient account, amount).
-   - **Transaction Service:** Verifies account balance for sufficient funds.
-   - **Decision:** Is the balance sufficient for the transfer?
-     - **Yes:** Proceed to transfer.
-     - **No:** Display error (insufficient funds).
-   - **Action:** Transfer funds if balance is sufficient.
-   - **Outcome:** Transaction completes, and both sender and recipient receive confirmation.
-   - **Action:** Generate transaction history.
-     - **Outcome:** Transaction details are added to the user's history.
-   - **Decision:** Does the user wish to proceed with another transaction?
-     - **Yes:** Go back to "Select Transaction Type."
-     - **No:** End the process.
+Activate the virtual environment:
 
-3. **Top-up E-wallet:**
+```bash
+For Windows:
+venv\Scripts\activate
 
-   - **Action:** User selects "Top-up E-wallet" and enters e-wallet details (amount to top up).
-   - **Transaction Service:** Verifies account balance for sufficient funds.
-   - **Decision:** Is the balance sufficient for the top-up?
-     - **Yes:** Proceed with top-up process.
-     - **No:** Display error (insufficient funds).
-   - **Action:** Top-up the user’s e-wallet balance if sufficient funds are available.
-   - **Outcome:** E-wallet balance is updated.
-   - **Action:** Generate transaction history.
-     - **Outcome:** Transaction details are added to history.
-   - **Decision:** Does the user wish to proceed with another transaction?
-     - **Yes:** Go back to "Select Transaction Type."
-     - **No:** End the process.
+For Mac/Linux:
+source venv/bin/activate
+```
 
-4. **Instant Payment:**
+### Step 3: Install Dependencies
 
-   - **Action:** User selects "Instant Payment" and enters payment details (payee, amount).
-   - **Transaction Service:** Verifies account balance for sufficient funds.
-   - **Decision:** Is the balance sufficient for the payment?
-   - **Yes:** Proceed to payment processing.
-   - **No:** Display error (insufficient funds).
-   - **Action:** Complete the payment immediately if funds are sufficient.
-   - **Outcome:** Instant payment is confirmed and a receipt is generated.
-   - **Action:** Generate transaction history.
-   - **Outcome:** Transaction details are updated in history.
-   - **Decision:** Does the user wish to proceed with another transaction?
-   - **Yes:** Go back to "Select Transaction Type."
-   - **No:** End the process.
+Install the necessary dependencies from the requirements.txt file.
 
-**End Transaction:**
+```bash
+uv pip install -r requirements.txt
+```
 
-- **Outcome:** After completing a transaction or if an error occurs, the user can either exit the process or retry.
+### Step 4: Run the Application
 
----
+To run the Flask app, use the following command:
 
-## **Key Decisions and Processes**
+```
+python main.py
+```
 
-### **User Authentication Diagram:**
+The app will be available at http://127.0.0.1:5000/.
 
-- **Decision 1:** Valid credentials (success) vs. Invalid credentials (failure).
-- **Decision 2:** Retry the login or exit on failure.
-- **Action:** Successful login generates a token, granting access to the user.
+Step 5: Test the API
+You can use Postman or any HTTP client to interact with the API at the base URL http://127.0.0.1:5000/. Refer to the API documentation below for details on how to use each endpoint.
 
-### **Transaction Handling Diagram:**
+API Usage Documentation
+User Management Endpoints
+POST /users/register
+Request Body:
 
-- **Balance Check:** Before processing any transaction, the system verifies if the user has sufficient funds.
-- **Transaction Type Selection:** The user can select from various transaction options like **Check Balance**, **Transfer**, **Instant Payment**, and **Top-up E-wallet**.
-- **Transaction Completion:** If the transaction is successful, the user's transaction history is updated.
-- **Error Handling:** If the balance is insufficient or an error occurs, the user can retry or cancel the operation.
+json
+Copy
+Edit
+{
+"username": "JohnDoe",
+"email": "johndoe@example.com",
+"password": "password123"
+}
+Response:
 
----
+Success (201 Created):
+json
+Copy
+Edit
+{
+"id": 1,
+"username": "JohnDoe",
+"email": "johndoe@example.com"
+}
+Error (400 Bad Request):
+json
+Copy
+Edit
+{
+"error": "Email already registered"
+}
+GET /users/me
+Request Header:
 
-## **Conclusion**
+User-ID: The ID of the currently logged-in user.
+Response:
 
-These activity diagrams capture the key workflows in **User Authentication** and **Transaction Handling**. They provide a clear visual representation of how users interact with the system to authenticate and perform various types of transactions. The diagrams are designed to help stakeholders understand the process flow, decisions, and actions involved in each workflow.
+Success (200 OK):
+json
+Copy
+Edit
+{
+"id": 1,
+"username": "JohnDoe",
+"email": "johndoe@example.com"
+}
+PUT /users/me
+Request Body:
 
-## License
+json
+Copy
+Edit
+{
+"username": "JohnDoeUpdated",
+"password": "newpassword123"
+}
+Response:
 
-Used for submission Assignment Project Milestone 3, RevoU FSSE Program.
+Success (200 OK):
+json
+Copy
+Edit
+{
+"id": 1,
+"username": "JohnDoeUpdated",
+"email": "johndoe@example.com"
+}
+Account Management Endpoints
+POST /accounts
+Request Body:
 
----
+json
+Copy
+Edit
+{
+"account_type": "checking",
+"balance": 500
+}
+Response:
 
-© 2025 Activity Diagrams of RevoBank. All Rights Reserved. Created by @anggreinipra
+Success (201 Created):
+json
+Copy
+Edit
+{
+"id": 1,
+"account_type": "checking",
+"balance": 500
+}
+GET /accounts/:id
+Request Parameters:
+
+id: The ID of the account to retrieve.
+Response:
+
+Success (200 OK):
+json
+Copy
+Edit
+{
+"id": 1,
+"account_type": "checking",
+"balance": 500
+}
+PUT /accounts/:id
+Request Body:
+
+json
+Copy
+Edit
+{
+"balance": 1000
+}
+Response:
+
+Success (200 OK):
+json
+Copy
+Edit
+{
+"id": 1,
+"account_type": "checking",
+"balance": 1000
+}
+DELETE /accounts/:id
+Request Parameters:
+
+id: The ID of the account to delete.
+Response:
+
+Success (200 OK):
+json
+Copy
+Edit
+{
+"message": "Account deleted successfully"
+}
+Transaction Management Endpoints
+POST /transactions
+Request Body:
+
+json
+Copy
+Edit
+{
+"transaction_type": "deposit",
+"account_id": 1,
+"amount": 200
+}
+Response:
+
+Success (201 Created):
+json
+Copy
+Edit
+{
+"transaction_id": 1,
+"transaction_type": "deposit",
+"amount": 200
+}
+GET /transactions/:id
+Request Parameters:
+
+id: The ID of the transaction to retrieve.
+Response:
+
+Success (200 OK):
+json
+Copy
+Edit
+{
+"transaction_id": 1,
+"transaction_type": "deposit",
+"amount": 200,
+"account_id": 1
+}
+GET /transactions
+Response:
+Success (200 OK):
+json
+Copy
+Edit
+[
+{
+"transaction_id": 1,
+"transaction_type": "deposit",
+"amount": 200,
+"account_id": 1
+}
+]
+Contributing
+If you would like to contribute to RevoBank, feel free to fork the repository and submit a pull request. Please ensure your code follows the existing style guidelines and includes appropriate tests.
+
+License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+pgsql
+Copy
+Edit
+
+This markdown provides the full documentation in a structured and easy-to-read format, suitable for inclusion in your project's repository.
+
+```
+
+```
