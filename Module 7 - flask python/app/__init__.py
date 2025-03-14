@@ -1,16 +1,27 @@
 from flask import Flask
 from flask_bcrypt import Bcrypt
-from app.routes import bp  # Pastikan ini mengimpor Blueprint dengan benar
+import logging
 
+# ✅ Import Blueprint utama (yang sudah menggabungkan semua routes)
+from app.routes import bp
+
+# ✅ Inisialisasi Flask-Bcrypt
 bcrypt = Bcrypt()
 
 def create_app():
+    """Fungsi untuk membuat instance Flask app"""
     app = Flask(__name__)
-    
-    # Inisialisasi ekstensi Flask
+
+    # ✅ Tambahkan konfigurasi SECRET_KEY (penting untuk keamanan)
+    app.config["SECRET_KEY"] = "supersecretkey"
+
+    # ✅ Konfigurasi logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    # ✅ Inisialisasi Flask-Bcrypt
     bcrypt.init_app(app)
 
-    # Daftarkan Blueprint
+    # ✅ Registrasi Blueprint utama
     app.register_blueprint(bp)
 
     return app

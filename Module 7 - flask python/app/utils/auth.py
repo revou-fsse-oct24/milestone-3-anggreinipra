@@ -1,14 +1,40 @@
-from flask_bcrypt import Bcrypt # type: ignore
-from flask_jwt_extended import create_access_token, get_jwt_identity
-from datetime import timedelta
+import bcrypt
+from flask import Request, request
+from app.models import get_user_by_email
 
-bcrypt = Bcrypt()
+# ==============================
+# ✅ PASSWORD HASHING
+# ==============================
 
-def hash_password(password):
-    return bcrypt.generate_password_hash(password).decode('utf-8')
+def hash_password(password: str) -> str:
+    """Meng-hash password menggunakan bcrypt"""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
-def check_password(password, hashed):
-    return bcrypt.check_password_hash(hashed, password)
 
-def generate_token(user_id):
-    return create_access_token(identity=user_id, expires_delta=timedelta(days=1))
+def check_password(password: str, hashed_password: str) -> bool:
+    """Memeriksa apakah password cocok dengan hash yang tersimpan"""
+    return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
+
+# ==============================
+# ✅ USER AUTHENTICATION
+# ==============================
+
+def authenticate_user(req: Request):  # 🔹 Ganti flask.request → flask.Request
+    """
+    Autentikasi user dari request menggunakan email di `Authorization: Bearer <email>`.
+    Ini hanya simulasi karena tidak ada sistem token/JWT.
+    """
+    auth_header = req.headers.get("Authorization")
+
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None  # Tidak ada header atau format salah
+
+    email = auth_header.split("Bearer ")[1].strip()
+    
+    if not email:
+        return None  # Email kosong
+
+    user = get_user_by_email(email)
+    return user if user else None

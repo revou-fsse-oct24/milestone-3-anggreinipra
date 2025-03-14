@@ -1,7 +1,12 @@
-from werkzeug.security import generate_password_hash
+import logging
 import random
 from datetime import datetime
 from decimal import Decimal
+from werkzeug.security import generate_password_hash
+
+# ✅ Setup logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 # ✅ Model User
 class User:
@@ -13,18 +18,21 @@ class User:
         self.account_number = account_number or self.generate_account_number()
 
     def generate_account_number(self):
+        """Membuat nomor akun unik berdasarkan tahun, bulan, dan angka acak."""
         current_date = datetime.now()
         year_month = current_date.strftime("%y%m")  # Format YYMM
         random_digits = random.randint(100000, 999999)
         return f"{year_month}-{random_digits}"
     
     def to_dict(self):
+        """Mengembalikan data user dalam bentuk dictionary."""
         return {
             "id": self.id,
             "username": self.username,
             "email": self.email,
             "account_number": self.account_number
         }
+
 
 # ✅ Model Transaction
 class Transaction:
@@ -37,6 +45,7 @@ class Transaction:
         self.timestamp = timestamp or datetime.now().isoformat()
 
     def to_dict(self):
+        """Mengembalikan data transaksi dalam bentuk dictionary."""
         return {
             "id": self.id,
             "account_id": self.account_id,
@@ -45,6 +54,7 @@ class Transaction:
             "recipient_account_id": self.recipient_account_id,
             "timestamp": self.timestamp  # Format string ISO 8601
         }
+
 
 # ✅ Dummy Users
 users = [
@@ -68,28 +78,20 @@ accounts_db = {
     "2101-123098": Decimal(2000.0),
 }
 
-# ✅ Fungsi untuk mengecek apakah akun valid
-def is_valid_account(account_number):
-    """Memeriksa apakah account_number ada di dalam accounts_db."""
-    return account_number in accounts_db
 
 # ✅ Fungsi User Management
 def get_all_users():
-    """Mengembalikan daftar semua user sebagai daftar objek User."""
-    return users  
+    return [user.to_dict() for user in users]  
 
 def get_user_by_id(user_id):
-    """Mengambil user berdasarkan ID."""
     return next((user for user in users if user.id == user_id), None)
 
 def get_user_by_email(email):
-    """Mengambil user berdasarkan email."""
     return next((user for user in users if user.email == email), None)
 
 def add_user(username, email, password, account_number=None):
-    """Menambahkan user baru, menghindari email yang sudah ada."""
     if get_user_by_email(email):
-        return None  
+        return None  # Email sudah terdaftar
 
     new_id = max([user.id for user in users], default=0) + 1  
     hashed_password = generate_password_hash(password)
@@ -98,34 +100,57 @@ def add_user(username, email, password, account_number=None):
     new_user = User(new_id, username, email, hashed_password, new_account_number)
     users.append(new_user)
 
-    # Set initial balance to zero
-    accounts_db[new_account_number] = Decimal(0.0)
+    add_account(new_account_number, 0.0)
     
-    return new_user  
+    return new_user.to_dict()  
 
-def delete_user(user_id):
-    """Menghapus user berdasarkan ID."""
-    global users
-    user_to_delete = get_user_by_id(user_id)
-    if user_to_delete:
-        users = [user for user in users if user.id != user_id]
-        return True  
-    return False  
+def update_user_profile(email, data):
+    user = get_user_by_email(email)
+    if not user:
+        return None
 
-def update_user_by_id(user_id, username=None, password=None):
-    """Memperbarui informasi user."""
-    user = get_user_by_id(user_id)
-    if user:
-        if username:
-            user.username = username
-        if password:
-            user.password = generate_password_hash(password) 
-        return user  
-    return None  
+    user.username = data.get("username", user.username)
+    user.email = data.get("email", user.email)
+    if "password" in data:
+        user.password = generate_password_hash(data["password"])
+    
+    return user.to_dict()
+
+
+# ✅ Fungsi Account Management
+def get_all_accounts():
+    return [{"account_number": acc, "balance": float(balance)} for acc, balance in accounts_db.items()]
+
+def get_account_by_id(account_number):
+    return {"account_number": account_number, "balance": float(accounts_db.get(account_number, 0.0))}
+
+def add_account(account_number, initial_balance=0.0):
+    if account_number in accounts_db:
+        return {"error": "Account already exists"}
+    
+    accounts_db[account_number] = Decimal(initial_balance)
+    return {"account_number": account_number, "balance": float(initial_balance)}
+
+def update_account(account_number, new_balance):
+    if account_number not in accounts_db:
+        return {"error": "Account not found"}
+    
+    accounts_db[account_number] = Decimal(new_balance)
+    return {"account_number": account_number, "balance": float(new_balance)}
+
+def delete_account(account_number):
+    if account_number not in accounts_db:
+        return {"error": "Account not found"}
+    
+    del accounts_db[account_number]
+    return {"message": "Account deleted successfully"}
+
+def is_valid_account(account_number):
+    return account_number in accounts_db
+
 
 # ✅ Fungsi Transaction Management
 def get_all_transactions(account_id=None, start_date=None, end_date=None):
-    """Mengambil semua transaksi, dengan filter opsional berdasarkan account_id, start_date, dan end_date."""
     filtered_transactions = transactions[:]
 
     if account_id:
@@ -142,57 +167,36 @@ def get_all_transactions(account_id=None, start_date=None, end_date=None):
         except ValueError:
             return []
 
-    return filtered_transactions  
+    return [t.to_dict() for t in filtered_transactions]
 
 def get_transaction_by_id(transaction_id):
-    """Mengambil transaksi berdasarkan ID."""
-    return next((t for t in transactions if t.id == transaction_id), None)
+    transaction = next((t for t in transactions if t.id == transaction_id), None)
+    return transaction.to_dict() if transaction else None
 
 def get_account_balance(account_id):
-    """Mengambil saldo akun."""
-    return float(accounts_db.get(account_id, 0.0))  
+    return float(accounts_db.get(account_id, 0.0))
 
-def add_transaction(account_id, transaction_type, amount, recipient_account_id=None):
-    """Menambahkan transaksi baru dengan validasi yang ketat."""
+
+# ✅ Fungsi untuk menambahkan transaksi
+def add_transaction(account_id, amount, transaction_type, recipient_account_id=None):
+    if account_id not in accounts_db:
+        return {"error": "Account not found"}
+
     amount = Decimal(amount)
-    if not is_valid_account(account_id):
-        return {"error": "Sender account not found"}
-
-    sender_balance = accounts_db[account_id]
-
-    # ✅ Validasi transaksi transfer
-    if transaction_type == "transfer":
-        if not is_valid_account(recipient_account_id):
-            return {"error": "Recipient account not found"}
-        if sender_balance < amount:
-            return {"error": "Insufficient balance"}
-
-    # ✅ Validasi transaksi penarikan
-    elif transaction_type == "withdrawal":
-        if sender_balance < amount:
-            return {"error": "Insufficient balance"}
-
-    # ✅ Buat transaksi baru
     new_id = max([t.id for t in transactions], default=0) + 1
-    new_transaction = Transaction(new_id, account_id, amount, transaction_type, recipient_account_id)
-
-    # ✅ Update saldo akun
+    transaction = Transaction(new_id, account_id, amount, transaction_type, recipient_account_id)
+    
     if transaction_type == "deposit":
         accounts_db[account_id] += amount
     elif transaction_type == "withdrawal":
+        if accounts_db[account_id] < amount:
+            return {"error": "Insufficient balance"}
         accounts_db[account_id] -= amount
     elif transaction_type == "transfer":
+        if recipient_account_id not in accounts_db or accounts_db[account_id] < amount:
+            return {"error": "Invalid transfer"}
         accounts_db[account_id] -= amount
         accounts_db[recipient_account_id] += amount
 
-    transactions.append(new_transaction)
-    return new_transaction  
-
-def get_total_transaction_amount(account_id):
-    """Menghitung total saldo akhir dari semua transaksi untuk account_id tertentu."""
-    total_amount = sum(
-        t.amount if t.transaction_type == "deposit" else -t.amount
-        for t in transactions if t.account_id == account_id
-    )
-
-    return float(total_amount)
+    transactions.append(transaction)
+    return transaction.to_dict()
