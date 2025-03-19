@@ -1,13 +1,14 @@
 import logging
 from flask import Flask, jsonify, request
-from app.routes import api_bp  # Gunakan nama baru
+from app.routes import api_bp
+
 
 def create_app():
     """Membuat dan mengonfigurasi aplikasi Flask"""
     app = Flask(__name__)
 
-    # ✅ Register blueprint utama
-    app.register_blueprint(api_bp)
+    # ✅ Register blueprint utama dengan prefix kosong
+    app.register_blueprint(api_bp, url_prefix="")  
 
     # ✅ Konfigurasi logging
     logging.basicConfig(level=logging.DEBUG)

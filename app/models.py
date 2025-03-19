@@ -1,5 +1,7 @@
 import hashlib
 import uuid
+from datetime import datetime
+from flask import jsonify
 
 # ===============================
 # ✅ DUMMY DATABASE
@@ -56,47 +58,107 @@ users_db.extend([
     }
 ])
 
-accounts_db.extend([
+accounts_db = [
     {
         "account_number": "4338761761",
         "user_id": "001",
         "balance": 5000,
+        "account_name": "Tabungan Layla",
+        "account_type": "savings",
+        "status": "active"
     },
     {
         "account_number": "5239876543",
         "user_id": "002",
         "balance": 10000,
+        "account_name": "Rekening Bisnis Ari",
+        "account_type": "business",
+        "status": "active"
     },
     {
         "account_number": "7894561230",
         "user_id": "003",
         "balance": 7500,
+        "account_name": "Dana Darurat Nadia",
+        "account_type": "savings",
+        "status": "inactive"
+    },
+    {
+        "account_number": "9999999999",
+        "user_id": "004",
+        "balance": 0,
+        "account_name": "Testing Account untuk delete",
+        "account_type": "savings",
+        "status": "inactive"
     }
-])
+]
 
-transactions_db.extend([
+transactions_db = [
     {
         "transaction_id": "txn001",
         "account_number": "4338761761",
         "transaction_type": "deposit",
         "amount": 5000,
-        "recipient_account_number": None
+        "recipient_account_number": None,
+        "date_transaction": "2025-03-19T15:30:00",
+        "balance": 10000
     },
     {
         "transaction_id": "txn002",
         "account_number": "5239876543",
         "transaction_type": "withdrawal",
         "amount": 2000,
-        "recipient_account_number": None
+        "recipient_account_number": None,
+        "date_transaction": "2025-03-19T16:00:00",
+        "balance": 8000
     },
     {
         "transaction_id": "txn003",
-        "account_number": "7894561230",
+        "account_number": "4338761761",
+        "transaction_type": "transfer",
+        "amount": 1000,
+        "recipient_account_number": "5239876543",
+        "date_transaction": "2025-03-19T17:00:00",
+        "balance": 9000
+    },
+    {
+        "transaction_id": "txn004",
+        "account_number": "5239876543",
+        "transaction_type": "transfer",
+        "amount": 1000,
+        "recipient_account_number": None,
+        "date_transaction": "2025-03-19T17:00:00",
+        "balance": 9000
+    },
+    # 🔹 Transaksi untuk Nadia
+    {
+        "transaction_id": "txn005",
+        "account_number": "7894561230",  # Akun Nadia
+        "transaction_type": "deposit",
+        "amount": 3000,
+        "recipient_account_number": None,
+        "date_transaction": "2025-03-19T18:00:00",
+        "balance": 10500  # 7500 + 3000 deposit
+    },
+    {
+        "transaction_id": "txn006",
+        "account_number": "7894561230",  # Akun Nadia melakukan transfer
         "transaction_type": "transfer",
         "amount": 1500,
-        "recipient_account_number": "5239876543"
+        "recipient_account_number": "5239876543",  # Transfer ke Ari
+        "date_transaction": "2025-03-19T19:00:00",
+        "balance": 9000  # 10500 - 1500 transfer
+    },
+    {
+        "transaction_id": "txn007",
+        "account_number": "5239876543",  # Akun Ari menerima dari Nadia
+        "transaction_type": "transfer",
+        "amount": 1500,
+        "recipient_account_number": None,
+        "date_transaction": "2025-03-19T19:00:00",
+        "balance": 10500  # 9000 + 1500 transfer masuk dari Nadia
     }
-])
+]
 
 
 # ===============================
@@ -138,13 +200,23 @@ def add_user(username, email, password):
     return new_user
 
 
-def update_user_profile(user_id, new_username=None):
+def update_user_profile(user_id, user_name=None, email=None, password=None):
+    """Memperbarui profil user berdasarkan user_id"""
     user = get_user_by_id(user_id)
     if not user:
         return None
 
-    if new_username:
-        user["user_name"] = new_username
+    if user_name:
+        user["user_name"] = user_name
+
+    if email:
+        if any(u["email"] == email and u["user_id"] != user_id for u in users_db):
+            return {"error": "Email is already in use"}
+
+        user["email"] = email
+
+    if password:
+        user["password"] = hash_password(password)
 
     return user
 
@@ -209,6 +281,24 @@ def add_account(user_id, initial_balance):
     accounts_db.append(new_account)
     return new_account
 
+def update_account(account_number, new_balance):
+    """Memperbarui saldo akun berdasarkan nomor rekening."""
+    account = get_account_by_number(account_number)
+
+    if not account:
+        return {"error": "Account not found"}
+
+    if new_balance < 0:
+        return {"error": "Balance cannot be negative"}
+
+    account["balance"] = new_balance
+    return {
+        "message": "Account balance updated successfully",
+        "account_number": account["account_number"],
+        "balance": account["balance"]
+    }
+
+
 def delete_account(account_number):
     global accounts_db
     account = get_account_by_number(account_number)
@@ -231,15 +321,8 @@ def delete_account(account_number):
 # ✅ TRANSACTION MANAGEMENT
 # ===============================
 
-def get_all_transactions(account_number=None):
-    if account_number:
-        return [tx for tx in transactions_db if tx["account_number"] == account_number]
-    return transactions_db
-
-def get_transaction_by_id(transaction_id):
-    return next((tx for tx in transactions_db if tx["transaction_id"] == transaction_id), None)
-
 def add_transaction(account_number, transaction_type, amount, recipient_account_number=None):
+    """Menambahkan transaksi baru dan mengupdate saldo akun."""
     sender_account = get_account_by_number(account_number)
 
     if not sender_account:
@@ -255,18 +338,12 @@ def add_transaction(account_number, transaction_type, amount, recipient_account_
         if recipient_account_number == account_number:
             return {"error": "Cannot transfer to the same account"}
 
-    transaction_id = str(uuid.uuid4())
+    # ✅ Buat timestamp untuk transaksi
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    transaction = {
-        "transaction_id": transaction_id,
-        "account_number": account_number,
-        "transaction_type": transaction_type,
-        "amount": amount,
-        "recipient_account_number": recipient_account_number if transaction_type == "transfer" else None,
-    }
+    transaction_id = f"txn{len(transactions_db) + 1:03d}"
 
-    transactions_db.append(transaction)
-
+    # Update balance
     if transaction_type == "deposit":
         sender_account["balance"] += amount
     elif transaction_type == "withdrawal":
@@ -275,4 +352,78 @@ def add_transaction(account_number, transaction_type, amount, recipient_account_
         sender_account["balance"] -= amount
         recipient_account["balance"] += amount
 
+    transaction = {
+        "transaction_id": transaction_id,
+        "account_number": account_number,
+        "transaction_type": transaction_type,
+        "amount": amount,
+        "recipient_account_number": recipient_account_number if transaction_type == "transfer" else None,
+        "date_transaction": timestamp,
+        "balance": sender_account["balance"]
+    }
+
+    transactions_db.append(transaction)
     return transaction
+
+
+def get_all_transactions(account_number=None):
+    """Mengambil semua transaksi dengan informasi user dan saldo setelah transaksi."""
+    filtered_transactions = transactions_db
+
+    if account_number:
+        filtered_transactions = [tx for tx in transactions_db if tx["account_number"] == account_number]
+
+    result = []
+    for tx in filtered_transactions:
+        user = get_user_by_id(get_account_by_number(tx["account_number"])["user_id"])
+
+        result.append({
+            "username": user["user_name"] if user else None,
+            "user_id": user["user_id"] if user else None,
+            "transaction_id": tx["transaction_id"],
+            "account_number": tx["account_number"],
+            "transaction_type": tx["transaction_type"],
+            "amount": tx["amount"],
+            "recipient_account_number": tx["recipient_account_number"],
+            "date_transaction": tx.get("date_transaction", "N/A"),
+            "balance": tx["balance"]
+        })
+
+    return result
+
+
+def get_transaction_by_id(transaction_id):
+    """Mengambil detail transaksi berdasarkan transaction_id."""
+    tx = next((t for t in transactions_db if t["transaction_id"] == transaction_id), None)
+    if not tx:
+        return {"error": "Transaction not found"}
+
+    account = get_account_by_number(tx["account_number"])
+    if not account:
+        return {"error": f"Account not found for transaction {transaction_id}, account_number: {tx['account_number']}"}
+
+    user = get_user_by_id(account["user_id"])
+    if not user:
+        return {"error": f"User not found for account {account['account_number']}"}
+
+    return {
+        "transaction_id": tx["transaction_id"],
+        "account_number": tx["account_number"],
+        "user_id": user["user_id"],
+        "username": user["user_name"],
+        "transaction_type": tx["transaction_type"],
+        "amount": tx["amount"],
+        "recipient_account_number": tx.get("recipient_account_number"),
+        "date_transaction": tx["date_transaction"], 
+        "balance": tx["balance"]
+    }
+
+
+def get_transactions_by_account(account_number):
+    """Mengambil daftar transaksi berdasarkan account_number."""
+    transactions = [tx for tx in transactions_db if tx["account_number"] == account_number]
+
+    if not transactions:
+        return jsonify({"error": "No transactions found for this account"}), 404
+
+    return jsonify(transactions), 200

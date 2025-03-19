@@ -60,20 +60,29 @@ def get_profile():
 @users_bp.route("/me", methods=["PUT"])
 def update_profile():
     """Memperbarui profil user"""
-    user_id = request.args.get("user_id")
+    user_id = request.headers.get("X-User-Id")
+    
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
     data = request.get_json()
-    if not data or "new_username" not in data:
-        return jsonify({"error": "Missing new_username"}), 400
+    if not data:
+        return jsonify({"error": "Request body is empty"}), 400
 
-    updated_user = update_user_profile(user_id, data["new_username"])
+    updated_user = update_user_profile(
+        user_id,
+        user_name=data.get("user_name"),
+        email=data.get("email"),
+        password=data.get("password")
+    )
 
-    if not updated_user:
+    if updated_user is None:
         return jsonify({"error": "User not found"}), 404
+    elif isinstance(updated_user, dict) and "error" in updated_user:
+        return jsonify(updated_user), 400  # Jika ada error, return error response
 
-    return jsonify(updated_user), 200
+    return jsonify({"message": "User profile updated successfully", "user": updated_user}), 200
+
 
 @users_bp.route("/<user_id>", methods=["DELETE"])
 def delete_user_route(user_id):
