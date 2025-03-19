@@ -1,202 +1,178 @@
-import logging
-import random
-from datetime import datetime
-from decimal import Decimal
-from werkzeug.security import generate_password_hash
+import hashlib
+import uuid
 
-# ✅ Setup logging
-logging.basicConfig(level=logging.DEBUG)
+# ===============================
+# ✅ DUMMY DATABASE
+# ===============================
+users_db = []
+accounts_db = []
+transactions_db = []
 
+# ===============================
+# ✅ HELPER FUNCTIONS
+# ===============================
 
-# ✅ Model User
-class User:
-    def __init__(self, id, username, email, password=None, account_number=None):
-        self.id = id
-        self.username = username
-        self.email = email
-        self.password = password
-        self.account_number = account_number or self.generate_account_number()
+def generate_account_number():
+    """Membuat nomor rekening unik dengan format 10 digit."""
+    return str(uuid.uuid4().int)[:10]
 
-    def generate_account_number(self):
-        """Membuat nomor akun unik berdasarkan tahun, bulan, dan angka acak."""
-        current_date = datetime.now()
-        year_month = current_date.strftime("%y%m")  # Format YYMM
-        random_digits = random.randint(100000, 999999)
-        return f"{year_month}-{random_digits}"
-    
-    def to_dict(self):
-        """Mengembalikan data user dalam bentuk dictionary."""
-        return {
-            "id": self.id,
-            "username": self.username,
-            "email": self.email,
-            "account_number": self.account_number
-        }
+def hash_password(password):
+    """Meng-hash password menggunakan SHA256."""
+    return hashlib.sha256(password.encode()).hexdigest()
 
+# ===============================
+# ✅ USER MANAGEMENT
+# ===============================
 
-# ✅ Model Transaction
-class Transaction:
-    def __init__(self, id, account_id, amount, transaction_type, recipient_account_id=None, timestamp=None):
-        self.id = id
-        self.account_id = account_id
-        self.amount = Decimal(amount)  # Gunakan Decimal agar lebih presisi
-        self.transaction_type = transaction_type  # deposit, withdrawal, transfer
-        self.recipient_account_id = recipient_account_id
-        self.timestamp = timestamp or datetime.now().isoformat()
-
-    def to_dict(self):
-        """Mengembalikan data transaksi dalam bentuk dictionary."""
-        return {
-            "id": self.id,
-            "account_id": self.account_id,
-            "amount": float(self.amount),  # JSON kompatibel dengan float
-            "transaction_type": self.transaction_type,
-            "recipient_account_id": self.recipient_account_id,
-            "timestamp": self.timestamp  # Format string ISO 8601
-        }
-
-
-# ✅ Dummy Users
-users = [
-    User(1, 'john_doe', 'john@gmail.com', generate_password_hash('changeme123'), '2101-123456'),
-    User(2, 'jane_smith', 'jane@gmail.com', generate_password_hash('changeme456'), '2101-098765'),
-    User(3, 'joe_bloggs', 'joe@gmail.com', generate_password_hash('changeme789'), '2101-123098'),
-]
-
-# ✅ Dummy Transactions
-transactions = [
-    Transaction(1, '2101-123456', 1000, 'deposit'),
-    Transaction(2, '2101-098765', 500, 'withdrawal'),
-    Transaction(3, '2101-123098', 200, 'transfer', '2101-098765'),
-    Transaction(4, '2101-123098', 1500, 'deposit')
-]
-
-# ✅ Dummy Account Balances
-accounts_db = {
-    "2101-123456": Decimal(1000.0),
-    "2101-098765": Decimal(500.0),
-    "2101-123098": Decimal(2000.0),
-}
-
-
-# ✅ Fungsi User Management
 def get_all_users():
-    return [user.to_dict() for user in users]  
+    return users_db
 
 def get_user_by_id(user_id):
-    return next((user for user in users if user.id == user_id), None)
+    return next((user for user in users_db if user["user_id"] == user_id), None)
 
 def get_user_by_email(email):
-    return next((user for user in users if user.email == email), None)
+    return next((user for user in users_db if user["email"] == email), None)
 
-def add_user(username, email, password, account_number=None):
+def add_user(username, email, password):
     if get_user_by_email(email):
-        return None  # Email sudah terdaftar
+        return {"error": "Email already registered"}
 
-    new_id = max([user.id for user in users], default=0) + 1  
-    hashed_password = generate_password_hash(password)
-    new_account_number = account_number or User(new_id, username, email, hashed_password).generate_account_number()
-    
-    new_user = User(new_id, username, email, hashed_password, new_account_number)
-    users.append(new_user)
+    user_id = str(uuid.uuid4())
+    account_number = None  # Akun dibuat terpisah di accounts.py
 
-    add_account(new_account_number, 0.0)
-    
-    return new_user.to_dict()  
+    new_user = {
+        "user_id": user_id,
+        "user_name": username,
+        "email": email,
+        "account_number": account_number,
+        "password": hash_password(password),
+    }
 
-def update_user_profile(email, data):
-    user = get_user_by_email(email)
+    users_db.append(new_user)
+    return new_user
+
+def update_user_profile(user_id, new_username=None):
+    user = get_user_by_id(user_id)
     if not user:
         return None
 
-    user.username = data.get("username", user.username)
-    user.email = data.get("email", user.email)
-    if "password" in data:
-        user.password = generate_password_hash(data["password"])
-    
-    return user.to_dict()
+    if new_username:
+        user["user_name"] = new_username
 
+    return user
 
-# ✅ Fungsi Account Management
+def delete_user(user_id):
+    global users_db
+    user = get_user_by_id(user_id)
+
+    if not user:
+        return {"error": "User not found"}
+
+    if user["account_number"]:
+        return {"error": "Cannot delete user with an active account"}
+
+    users_db = [u for u in users_db if u["user_id"] != user_id]
+    return {"message": "User deleted successfully"}
+
+# ===============================
+# ✅ ACCOUNT MANAGEMENT
+# ===============================
+
 def get_all_accounts():
-    return [{"account_number": acc, "balance": float(balance)} for acc, balance in accounts_db.items()]
+    return accounts_db
 
-def get_account_by_id(account_number):
-    return {"account_number": account_number, "balance": float(accounts_db.get(account_number, 0.0))}
+def get_account_by_number(account_number):
+    return next((acc for acc in accounts_db if acc["account_number"] == account_number), None)
 
-def add_account(account_number, initial_balance=0.0):
-    if account_number in accounts_db:
-        return {"error": "Account already exists"}
-    
-    accounts_db[account_number] = Decimal(initial_balance)
-    return {"account_number": account_number, "balance": float(initial_balance)}
+def get_account_balance(account_number):
+    account = get_account_by_number(account_number)
+    return account["balance"] if account else None
 
-def update_account(account_number, new_balance):
-    if account_number not in accounts_db:
-        return {"error": "Account not found"}
-    
-    accounts_db[account_number] = Decimal(new_balance)
-    return {"account_number": account_number, "balance": float(new_balance)}
+def add_account(user_id, initial_balance):
+    user = get_user_by_id(user_id)
+    if not user:
+        return {"error": "User not found"}
+
+    if user["account_number"]:
+        return {"error": "User already has an account"}
+
+    account_number = generate_account_number()
+    new_account = {
+        "account_number": account_number,
+        "user_id": user_id,
+        "balance": initial_balance,
+    }
+
+    user["account_number"] = account_number  # Hubungkan akun ke user
+    accounts_db.append(new_account)
+    return new_account
 
 def delete_account(account_number):
-    if account_number not in accounts_db:
+    global accounts_db
+    account = get_account_by_number(account_number)
+
+    if not account:
         return {"error": "Account not found"}
-    
-    del accounts_db[account_number]
+
+    if account["balance"] > 0:
+        return {"error": "Cannot delete account with remaining balance"}
+
+    accounts_db = [acc for acc in accounts_db if acc["account_number"] != account_number]
+
+    # Hapus account_number dari user terkait
+    user = get_user_by_id(account["user_id"])
+    if user:
+        user["account_number"] = None
+
     return {"message": "Account deleted successfully"}
 
-def is_valid_account(account_number):
-    return account_number in accounts_db
+# ===============================
+# ✅ TRANSACTION MANAGEMENT
+# ===============================
 
-
-# ✅ Fungsi Transaction Management
-def get_all_transactions(account_id=None, start_date=None, end_date=None):
-    filtered_transactions = transactions[:]
-
-    if account_id:
-        filtered_transactions = [t for t in filtered_transactions if t.account_id == account_id]
-
-    if start_date and end_date:
-        try:
-            start_date = datetime.fromisoformat(start_date)
-            end_date = datetime.fromisoformat(end_date)
-            filtered_transactions = [
-                t for t in filtered_transactions 
-                if start_date <= datetime.fromisoformat(t.timestamp) <= end_date
-            ]
-        except ValueError:
-            return []
-
-    return [t.to_dict() for t in filtered_transactions]
+def get_all_transactions(account_number=None):
+    if account_number:
+        return [tx for tx in transactions_db if tx["account_number"] == account_number]
+    return transactions_db
 
 def get_transaction_by_id(transaction_id):
-    transaction = next((t for t in transactions if t.id == transaction_id), None)
-    return transaction.to_dict() if transaction else None
+    return next((tx for tx in transactions_db if tx["transaction_id"] == transaction_id), None)
 
-def get_account_balance(account_id):
-    return float(accounts_db.get(account_id, 0.0))
+def add_transaction(account_number, transaction_type, amount, recipient_account_number=None):
+    sender_account = get_account_by_number(account_number)
 
+    if not sender_account:
+        return {"error": "Sender account not found"}
 
-# ✅ Fungsi untuk menambahkan transaksi
-def add_transaction(account_id, amount, transaction_type, recipient_account_id=None):
-    if account_id not in accounts_db:
-        return {"error": "Account not found"}
+    if transaction_type == "withdrawal" and sender_account["balance"] < amount:
+        return {"error": "Insufficient balance"}
 
-    amount = Decimal(amount)
-    new_id = max([t.id for t in transactions], default=0) + 1
-    transaction = Transaction(new_id, account_id, amount, transaction_type, recipient_account_id)
-    
+    if transaction_type == "transfer":
+        recipient_account = get_account_by_number(recipient_account_number)
+        if not recipient_account:
+            return {"error": "Recipient account not found"}
+        if recipient_account_number == account_number:
+            return {"error": "Cannot transfer to the same account"}
+
+    transaction_id = str(uuid.uuid4())
+
+    transaction = {
+        "transaction_id": transaction_id,
+        "account_number": account_number,
+        "transaction_type": transaction_type,
+        "amount": amount,
+        "recipient_account_number": recipient_account_number if transaction_type == "transfer" else None,
+    }
+
+    transactions_db.append(transaction)
+
+    # Update saldo akun
     if transaction_type == "deposit":
-        accounts_db[account_id] += amount
+        sender_account["balance"] += amount
     elif transaction_type == "withdrawal":
-        if accounts_db[account_id] < amount:
-            return {"error": "Insufficient balance"}
-        accounts_db[account_id] -= amount
+        sender_account["balance"] -= amount
     elif transaction_type == "transfer":
-        if recipient_account_id not in accounts_db or accounts_db[account_id] < amount:
-            return {"error": "Invalid transfer"}
-        accounts_db[account_id] -= amount
-        accounts_db[recipient_account_id] += amount
+        sender_account["balance"] -= amount
+        recipient_account["balance"] += amount
 
-    transactions.append(transaction)
-    return transaction.to_dict()
+    return transaction

@@ -1,27 +1,25 @@
-from flask import Flask
-from flask_bcrypt import Bcrypt
 import logging
-
-# ✅ Import Blueprint utama (yang sudah menggabungkan semua routes)
-from app.routes import bp
-
-# ✅ Inisialisasi Flask-Bcrypt
-bcrypt = Bcrypt()
+from flask import Flask, jsonify, request
+from app.routes import api_bp  # Gunakan nama baru
 
 def create_app():
-    """Fungsi untuk membuat instance Flask app"""
+    """Membuat dan mengonfigurasi aplikasi Flask"""
     app = Flask(__name__)
 
-    # ✅ Tambahkan konfigurasi SECRET_KEY (penting untuk keamanan)
-    app.config["SECRET_KEY"] = "supersecretkey"
+    # ✅ Register blueprint utama
+    app.register_blueprint(api_bp)
 
     # ✅ Konfigurasi logging
     logging.basicConfig(level=logging.DEBUG)
 
-    # ✅ Inisialisasi Flask-Bcrypt
-    bcrypt.init_app(app)
+    # ✅ Middleware untuk validasi JSON
+    @app.before_request
+    def validate_json():
+        if request.method in ["POST", "PUT"] and not request.is_json:
+            return jsonify({"message": "Request must be in JSON format"}), 400
 
-    # ✅ Registrasi Blueprint utama
-    app.register_blueprint(bp)
+    @app.route('/')
+    def home():
+        return jsonify({"message": "Welcome to RevoBank API!"})
 
     return app

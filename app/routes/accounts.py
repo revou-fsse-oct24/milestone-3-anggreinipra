@@ -1,50 +1,76 @@
+import logging
 from flask import Blueprint, request, jsonify
 from app.models import (
-    get_all_accounts, get_account_by_id, add_account,
-    update_account, delete_account
+    get_all_accounts,
+    get_account_by_number,
+    add_account,
+    delete_account,
+    get_user_by_email,
+    get_account_balance,
 )
 
-bp = Blueprint('accounts', __name__, url_prefix='/accounts')
+accounts_bp = Blueprint("accounts", __name__)
 
-@bp.route('/', methods=['GET'])
+logging.basicConfig(level=logging.DEBUG)
+
+# ==============================
+# ✅ ACCOUNT MANAGEMENT ENDPOINTS
+# ==============================
+
+@accounts_bp.route("/", methods=["GET"])
 def get_accounts():
-    """Mengembalikan semua akun"""
+    """Mengembalikan semua akun."""
     accounts = get_all_accounts()
     return jsonify(accounts), 200
 
-@bp.route('/<string:account_id>', methods=['GET'])
-def get_account(account_id):
-    """Mengembalikan detail akun berdasarkan ID"""
-    account = get_account_by_id(account_id)
+@accounts_bp.route("/<string:account_number>", methods=["GET"])
+def get_account(account_number):
+    """Mengembalikan detail akun berdasarkan nomor akun."""
+    account = get_account_by_number(account_number)
     if account:
         return jsonify(account), 200
-    return jsonify({"message": "Account not found"}), 404
+    return jsonify({"error": "Account not found"}), 404
 
-@bp.route('/', methods=['POST'])
+@accounts_bp.route("/", methods=["POST"])
 def create_account():
-    """Membuat akun baru"""
+    """Membuat akun baru untuk pengguna."""
     data = request.get_json()
-    if not data or "account_type" not in data:
-        return jsonify({"message": "Missing account_type"}), 400
 
-    new_account = add_account(data['account_type'])
+    if not data or "email" not in data or "initial_balance" not in data:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    user = get_user_by_email(data["email"])
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if user["account_number"]:
+        return jsonify({"error": "User already has an account"}), 400
+
+    try:
+        initial_balance = float(data["initial_balance"])
+        if initial_balance < 0:
+            return jsonify({"error": "Initial balance cannot be negative"}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid initial_balance format"}), 400
+
+    new_account = add_account(user["user_id"], initial_balance)
+
+    if "error" in new_account:
+        return jsonify(new_account), 400
+
     return jsonify(new_account), 201
 
-@bp.route('/<string:account_id>', methods=['PUT'])
-def update_account_route(account_id):
-    """Memperbarui akun berdasarkan ID"""
-    data = request.get_json()
-    if not data:
-        return jsonify({"message": "No data provided"}), 400
+@accounts_bp.route("/<string:account_number>", methods=["DELETE"])
+def delete_account_route(account_number):
+    """Menghapus akun jika saldo 0."""
+    balance = get_account_balance(account_number)
 
-    updated_account = update_account(account_id, data)
-    if updated_account:
-        return jsonify(updated_account), 200
-    return jsonify({"message": "Account not found"}), 404
+    if balance > 0:
+        return jsonify({"error": "Cannot delete account with remaining balance"}), 400
 
-@bp.route('/<string:account_id>', methods=['DELETE'])
-def delete_account_route(account_id):
-    """Menghapus akun berdasarkan ID"""
-    if delete_account(account_id):
-        return jsonify({"message": "Account deleted"}), 200
-    return jsonify({"message": "Account not found"}), 404
+    response = delete_account(account_number)
+
+    if "error" in response:
+        return jsonify(response), 404
+
+    return jsonify(response), 200
