@@ -12,6 +12,14 @@ transactions_db = []
 # ✅ HELPER FUNCTIONS
 # ===============================
 
+def generate_user_id():
+    """Membuat user_id berurutan mulai dari 001."""
+    if not users_db:
+        return "001"
+    last_id = int(users_db[-1]["user_id"]) 
+    new_id = f"{last_id + 1:03d}"
+    return new_id
+
 def generate_account_number():
     """Membuat nomor rekening unik dengan format 10 digit."""
     return str(uuid.uuid4().int)[:10]
@@ -19,6 +27,77 @@ def generate_account_number():
 def hash_password(password):
     """Meng-hash password menggunakan SHA256."""
     return hashlib.sha256(password.encode()).hexdigest()
+
+# ===============================
+# ✅ DUMMY DATA UNTUK TESTING
+# ===============================
+
+users_db.extend([
+    {
+        "user_id": "001",
+        "user_name": "Layla",
+        "email": "laylamm@gmail.com",
+        "account_number": "4338761761",
+        "password": hash_password("Layla123"),
+    },
+    {
+        "user_id": "002",
+        "user_name": "Ari",
+        "email": "ari@gmail.com",
+        "account_number": "5239876543",
+        "password": hash_password("AriPass"),
+    },
+    {
+        "user_id": "003",
+        "user_name": "Nadia",
+        "email": "nadia@gmail.com",
+        "account_number": "7894561230",
+        "password": hash_password("Nadia321"),
+    }
+])
+
+accounts_db.extend([
+    {
+        "account_number": "4338761761",
+        "user_id": "001",
+        "balance": 5000,
+    },
+    {
+        "account_number": "5239876543",
+        "user_id": "002",
+        "balance": 10000,
+    },
+    {
+        "account_number": "7894561230",
+        "user_id": "003",
+        "balance": 7500,
+    }
+])
+
+transactions_db.extend([
+    {
+        "transaction_id": "txn001",
+        "account_number": "4338761761",
+        "transaction_type": "deposit",
+        "amount": 5000,
+        "recipient_account_number": None
+    },
+    {
+        "transaction_id": "txn002",
+        "account_number": "5239876543",
+        "transaction_type": "withdrawal",
+        "amount": 2000,
+        "recipient_account_number": None
+    },
+    {
+        "transaction_id": "txn003",
+        "account_number": "7894561230",
+        "transaction_type": "transfer",
+        "amount": 1500,
+        "recipient_account_number": "5239876543"
+    }
+])
+
 
 # ===============================
 # ✅ USER MANAGEMENT
@@ -37,8 +116,8 @@ def add_user(username, email, password):
     if get_user_by_email(email):
         return {"error": "Email already registered"}
 
-    user_id = str(uuid.uuid4())
-    account_number = None  # Akun dibuat terpisah di accounts.py
+    user_id = generate_user_id()
+    account_number = generate_account_number()
 
     new_user = {
         "user_id": user_id,
@@ -47,9 +126,17 @@ def add_user(username, email, password):
         "account_number": account_number,
         "password": hash_password(password),
     }
-
     users_db.append(new_user)
+
+    new_account = {
+        "account_number": account_number,
+        "user_id": user_id,
+        "balance": 0,
+    }
+    accounts_db.append(new_account)
+
     return new_user
+
 
 def update_user_profile(user_id, new_username=None):
     user = get_user_by_id(user_id)
@@ -79,7 +166,21 @@ def delete_user(user_id):
 # ===============================
 
 def get_all_accounts():
-    return accounts_db
+    """Mengambil semua akun dengan informasi user terkait."""
+    account_list = []
+
+    for account in accounts_db:
+        user = get_user_by_id(account["user_id"]) 
+        account_list.append({
+            "user_id": account["user_id"],
+            "username": user["user_name"] if user else None,
+            "email": user["email"] if user else None,
+            "account_number": account["account_number"],
+            "balance": account["balance"]
+        })
+
+    return account_list
+
 
 def get_account_by_number(account_number):
     return next((acc for acc in accounts_db if acc["account_number"] == account_number), None)
@@ -89,6 +190,7 @@ def get_account_balance(account_number):
     return account["balance"] if account else None
 
 def add_account(user_id, initial_balance):
+    """Menambahkan akun untuk user yang sudah ada."""
     user = get_user_by_id(user_id)
     if not user:
         return {"error": "User not found"}
@@ -103,7 +205,7 @@ def add_account(user_id, initial_balance):
         "balance": initial_balance,
     }
 
-    user["account_number"] = account_number  # Hubungkan akun ke user
+    user["account_number"] = account_number
     accounts_db.append(new_account)
     return new_account
 
@@ -119,7 +221,6 @@ def delete_account(account_number):
 
     accounts_db = [acc for acc in accounts_db if acc["account_number"] != account_number]
 
-    # Hapus account_number dari user terkait
     user = get_user_by_id(account["user_id"])
     if user:
         user["account_number"] = None
@@ -166,7 +267,6 @@ def add_transaction(account_number, transaction_type, amount, recipient_account_
 
     transactions_db.append(transaction)
 
-    # Update saldo akun
     if transaction_type == "deposit":
         sender_account["balance"] += amount
     elif transaction_type == "withdrawal":

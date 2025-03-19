@@ -14,7 +14,7 @@ def get_users():
     users = get_all_users()
     return jsonify(users), 200
 
-@users_bp.route("/<int:user_id>", methods=["GET"])
+@users_bp.route("/<user_id>", methods=["GET"])
 def get_user_by_id_route(user_id):
     """Mengambil user berdasarkan ID"""
     user = get_user_by_id(user_id)
@@ -23,30 +23,26 @@ def get_user_by_id_route(user_id):
     return jsonify(user), 200
 
 @users_bp.route("/register", methods=["POST"])
-def register():
-    """Registrasi pengguna baru"""
-    data = request.get_json(silent=True)
+def register_user():
+    data = request.get_json()
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
 
-    if not data:
-        return jsonify({"error": "Invalid JSON format"}), 400
-
-    required_fields = ["username", "email", "password"]
-    if not all(field in data for field in required_fields):
+    if not username or not email or not password:
         return jsonify({"error": "Missing required fields"}), 400
 
-    username = data["username"].strip()
-    email = data["email"].strip()
-    password = data["password"].strip()
+    result = add_user(username, email, password)
 
-    if get_user_by_email(email):
-        return jsonify({"error": "Email already registered"}), 400
+    if "error" in result:
+        return jsonify(result), 400
 
-    new_user = add_user(username, email, password)
-
-    if "error" in new_user:
-        return jsonify(new_user), 400
-
-    return jsonify(new_user), 201
+    return jsonify({
+        "message": "User registered successfully",
+        "user_id": result["user_id"],
+        "account_number": result["account_number"],
+        "email": result["email"]
+    }), 201
 
 @users_bp.route("/me", methods=["GET"])
 def get_profile():
@@ -79,7 +75,7 @@ def update_profile():
 
     return jsonify(updated_user), 200
 
-@users_bp.route("/<int:user_id>", methods=["DELETE"])
+@users_bp.route("/<user_id>", methods=["DELETE"])
 def delete_user_route(user_id):
     """Menghapus pengguna berdasarkan user_id"""
     response = delete_user(user_id)
