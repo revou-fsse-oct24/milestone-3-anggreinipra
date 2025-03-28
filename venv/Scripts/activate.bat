@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=D:\Software Engineer\FSSE - RevoU 2024\Milestone3\milestone-3-anggreinipra\Module 7 - flask python\venv
+set VIRTUAL_ENV=D:\Software Engineer\FSSE - RevoU 2024\Milestone3\milestone-3-anggreinipra\venv
 
 if not defined PROMPT set PROMPT=$P$G
 
