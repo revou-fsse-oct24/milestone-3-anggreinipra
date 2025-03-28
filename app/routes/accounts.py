@@ -6,7 +6,14 @@ accounts_bp = Blueprint("accounts", __name__)
 @accounts_bp.route("/", methods=["GET"])
 def get_accounts():
     accounts = Account.query.all()
-    return jsonify([account.__dict__ for account in accounts]), 200
+    return jsonify([{
+        "account_number": account.account_number,
+        "account_name": account.account_name,
+        "account_type": account.account_type,
+        "balance": account.balance,
+        "status": account.status,
+        "user_id": account.user_id
+    } for account in accounts]), 200
 
 @accounts_bp.route("/", methods=["POST"])
 def create_account():
