@@ -35,7 +35,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="D:\Software Engineer\FSSE - RevoU 2024\Milestone3\milestone-3-anggreinipra\Module 7 - flask python\.venv"
+VIRTUAL_ENV="D:\Software Engineer\FSSE - RevoU 2024\Milestone3\milestone-3-anggreinipra\.venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

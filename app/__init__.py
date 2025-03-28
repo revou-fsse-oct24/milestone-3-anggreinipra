@@ -1,26 +1,22 @@
-import logging
-from flask import Flask, jsonify, request
-from app.routes import api_bp
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from app.config import Config
 
+# Inisialisasi extension
+db = SQLAlchemy()
+migrate = Migrate()
 
 def create_app():
-    """Membuat dan mengonfigurasi aplikasi Flask"""
     app = Flask(__name__)
+    app.config.from_object(Config)
 
-    # ✅ Register blueprint utama dengan prefix kosong
-    app.register_blueprint(api_bp, url_prefix="")  
+    # Inisialisasi dengan aplikasi
+    db.init_app(app)
+    migrate.init_app(app, db)
 
-    # ✅ Konfigurasi logging
-    logging.basicConfig(level=logging.DEBUG)
-
-    # ✅ Middleware untuk validasi JSON
-    @app.before_request
-    def validate_json():
-        if request.method in ["POST", "PUT"] and not request.is_json:
-            return jsonify({"message": "Request must be in JSON format"}), 400
-
-    @app.route('/')
-    def home():
-        return jsonify({"message": "Welcome to RevoBank API!"})
+    # Register blueprint
+    from app.routes import api_bp
+    app.register_blueprint(api_bp)
 
     return app
