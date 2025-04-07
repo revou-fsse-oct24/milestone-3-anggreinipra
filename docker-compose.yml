@@ -1,30 +1,39 @@
-version: '3.8'
 services:
   revobank:
     build: .
     container_name: revobank_app
     ports:
       - '5000:5000'
-    environment:
-      - FLASK_ENV=development
-      - DATABASE_URL=postgresql://postgres:password@db:5432/revobank
+    env_file:
+      - .env
     depends_on:
       - db
     volumes:
       - .:/app
+    command: python main.py
 
   db:
-    image: postgres:15
+    image: postgres
     container_name: revobank_db
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: revobank
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@revobank.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - '5050:80'
+    depends_on:
+      - db
 
 volumes:
   postgres_data:

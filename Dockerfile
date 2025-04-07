@@ -4,21 +4,18 @@ FROM python:3.10-slim
 # Set working directory
 WORKDIR /app
 
-# Copy project files
-COPY . /app
+# Install pip + uv
+RUN pip install --upgrade pip uv
 
-# Install UV Astral
-RUN pip install uv
+# Copy requirements and install
+COPY requirements.txt .
+RUN uv pip install --system --requirements requirements.txt
 
-# Create virtual environment
-RUN python -m venv .venv
+# Copy all project files
+COPY . .
 
-# Activate venv and install dependencies
-RUN .venv/bin/python -m pip install --upgrade pip
-RUN uv pip install --requirements requirements.txt
-
-# Expose port 5000
+# Expose port
 EXPOSE 5000
 
-# Command to run the app
-CMD ["uv", "run", "main:app", "--host=0.0.0.0", "--port=5000"]
+# Run app
+CMD ["uv", "run", "main:create_app", "--reload", "--host=0.0.0.0", "--port", "5000"]

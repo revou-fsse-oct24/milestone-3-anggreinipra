@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import db
 
-
 class Transaction(db.Model):
     __tablename__ = "transactions"
     __table_args__ = {'extend_existing': True} 
@@ -15,10 +14,10 @@ class Transaction(db.Model):
     date_transaction = Column(DateTime, default=datetime.utcnow)
     description = Column(String(255), nullable=True)
 
-    # FOREIGN KEY ke accounts.id
+    # Foreign Key ke Account
     account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
 
-    # RELATIONSHIP: Many-to-One (Transaction ➝ Account)
+    # Relasi Many-to-One: Transaction (Many) -> Account (One)
     account = relationship("Account", back_populates="transactions")
 
     def __repr__(self):

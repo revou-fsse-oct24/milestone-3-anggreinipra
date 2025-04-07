@@ -1,9 +1,37 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
+*.pyd
+*.pyc
+
+# Virtual env
 venv/
-env/
-.git
-*.db
-instance/
+ENV/
+
+# Git
+.git/
+.gitignore
+
+# OS & IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+
+# Migrations (optional)
+alembic/versions/
+
+# Test files & cache
+.pytest_cache/
+coverage.*
+htmlcov/
+*.log
+
+# Env config
 .env
+.env.*

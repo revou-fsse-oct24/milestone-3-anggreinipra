@@ -6,14 +6,14 @@ from app.database import db
 from datetime import datetime
 import uuid
 
-transactions_bp = Blueprint('transactions', __name__)
+transactions_bp = Blueprint('transactions', __name__, url_prefix="/transactions")
 
 # Util: generate transaction ID
 def generate_transaction_id():
     return str(uuid.uuid4())
 
-# POST /transactions-deposit
-@transactions_bp.route('/transactions-deposit', methods=['POST'])
+# POST /transactions/deposit
+@transactions_bp.route('/deposit', methods=['POST'])
 @jwt_required()
 def deposit():
     data = request.get_json()
@@ -39,8 +39,8 @@ def deposit():
     return jsonify({'message': 'Deposit successful', 'transaction': transaction.to_dict()}), 201
 
 
-# POST /transactions-withdrawal
-@transactions_bp.route('/transactions-withdrawal', methods=['POST'])
+# POST /transactions/withdrawal
+@transactions_bp.route('/withdrawal', methods=['POST'])
 @jwt_required()
 def withdrawal():
     data = request.get_json()
@@ -69,8 +69,8 @@ def withdrawal():
     return jsonify({'message': 'Withdrawal successful', 'transaction': transaction.to_dict()}), 201
 
 
-# POST /transactions-transfer
-@transactions_bp.route('/transactions-transfer', methods=['POST'])
+# POST /transactions/transfer
+@transactions_bp.route('/transfer', methods=['POST'])
 @jwt_required()
 def transfer():
     data = request.get_json()
@@ -87,11 +87,9 @@ def transfer():
     if from_account.balance < amount:
         return jsonify({'error': 'Insufficient funds'}), 400
 
-    # Transfer logic
     from_account.balance -= amount
     to_account.balance += amount
 
-    # Log both transactions
     t1 = Transaction(
         transaction_id=generate_transaction_id(),
         transaction_type='transfer_out',
@@ -114,8 +112,8 @@ def transfer():
     return jsonify({'message': 'Transfer successful', 'from': t1.to_dict(), 'to': t2.to_dict()}), 201
 
 
-# GET /transactions → Get all transactions
-@transactions_bp.route('/transactions', methods=['GET'])
+# GET /transactions → Get all transactions (optional ?account_number=...)
+@transactions_bp.route('', methods=['GET'])
 @jwt_required()
 def get_all_transactions():
     account_number = request.args.get('account_number')
@@ -132,7 +130,7 @@ def get_all_transactions():
 
 
 # GET /transactions/<transaction_id> → Get transaction by ID
-@transactions_bp.route('/transactions/<string:transaction_id>', methods=['GET'])
+@transactions_bp.route('/<string:transaction_id>', methods=['GET'])
 @jwt_required()
 def get_transaction_by_id(transaction_id):
     transaction = Transaction.query.filter_by(transaction_id=transaction_id).first()

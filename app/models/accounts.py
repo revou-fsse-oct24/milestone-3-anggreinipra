@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from app.database import db
 
-
 class Account(db.Model):
     __tablename__ = "accounts"
     __table_args__ = {'extend_existing': True} 
@@ -14,13 +13,13 @@ class Account(db.Model):
     balance = Column(Float, nullable=False, default=0.0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # FOREIGN KEY to users.id
+    # Foreign Key untuk User
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    # RELATIONSHIP: Many-to-One (Account ➝ User)
+    # Relasi Many-to-One: Account (Many) -> User (One)
     user = relationship("User", back_populates="accounts")
 
-    # RELATIONSHIP: One-to-Many (Account ➝ Transactions)
+    # Relasi One-to-Many: Account (One) -> Transaction (Many)
     transactions = relationship("Transaction", back_populates="account", cascade="all, delete-orphan")
 
     def __repr__(self):
