@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from app.models.transactions import Transaction
+from app.models.transactions import Transaction, TransactionType, TransferType
 from app.models.accounts import Account
 from app.database import db
 from datetime import datetime
@@ -22,7 +22,7 @@ def deposit():
 
     account.balance += amount
     transaction = Transaction(
-        transaction_type='deposit',
+        transaction_type=TransactionType.deposit.value,
         amount=amount,
         balance=account.balance,
         account_number=account.account_number,
@@ -51,7 +51,7 @@ def withdrawal():
 
     account.balance -= amount
     transaction = Transaction(
-        transaction_type='withdrawal',
+        transaction_type=TransactionType.withdrawal.value,
         amount=amount,
         balance=account.balance,
         account_number=account.account_number,
@@ -85,18 +85,18 @@ def transfer():
     to_account.balance += amount
 
     t1 = Transaction(
-        transaction_type="transfer",
+        transaction_type=TransactionType.transfer.value,
         is_transfer=True,
-        transfer_type="transfer_out",
+        transfer_type=TransferType.transfer_out.value,
         amount=amount,
         balance=from_account.balance,
         account_number=from_account.account_number,
         created_at=datetime.utcnow()
     )
     t2 = Transaction(
-        transaction_type="transfer",
+        transaction_type=TransactionType.transfer.value,
         is_transfer=True,
-        transfer_type="transfer_in",
+        transfer_type=TransferType.transfer_in.value,
         amount=amount,
         balance=to_account.balance,
         account_number=to_account.account_number,
@@ -109,7 +109,7 @@ def transfer():
     return jsonify({'message': 'Transfer successful', 'from': t1.to_dict(), 'to': t2.to_dict()}), 201
 
 
-# GET /transactions → Get all transactions (optional ?account_number=...)
+# GET /transactions
 @transactions_bp.route('', methods=['GET'])
 @jwt_required()
 def get_all_transactions():
@@ -126,8 +126,8 @@ def get_all_transactions():
     return jsonify([t.to_dict() for t in transactions]), 200
 
 
-# GET /transactions/<transaction_id> → Get transaction by ID
-@transactions_bp.route('/<int:transaction_id>', methods=['GET'])  # Ganti ke int
+# GET /transactions/<transaction_id>
+@transactions_bp.route('/<int:transaction_id>', methods=['GET'])
 @jwt_required()
 def get_transaction_by_id(transaction_id):
     transaction = Transaction.query.filter_by(transaction_id=transaction_id).first()

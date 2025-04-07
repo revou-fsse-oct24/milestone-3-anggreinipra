@@ -4,10 +4,15 @@ from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, Foreig
 from app.database import db
 from sqlalchemy.orm import relationship
 
+
 class TransactionType(Enum):
     deposit = "deposit"
     withdrawal = "withdrawal"
     transfer = "transfer"
+
+class TransferType(Enum):
+    transfer_in = "transfer_in"
+    transfer_out = "transfer_out"
 
 class Transaction(db.Model):
     __tablename__ = "transactions"
@@ -15,7 +20,7 @@ class Transaction(db.Model):
     transaction_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False)
     transaction_type = Column(String(20), nullable=False)
     is_transfer = Column(Boolean, default=False)
-    transfer_type = Column(String(20), nullable=True)  # transfer_in / transfer_out
+    transfer_type = Column(String(20), nullable=True)
     amount = Column(Float, nullable=False)
     balance = Column(Float, nullable=False)
     account_number = Column(String(20), ForeignKey('accounts.account_number'), nullable=False)
