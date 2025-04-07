@@ -11,18 +11,17 @@ users_bp = Blueprint('users', __name__, url_prefix="/users")
 
 # Helper: Generate user_id sequentially
 def generate_user_id():
-    last_user = User.query.order_by(User.id.desc()).first()
+    last_user = User.query.order_by(User.user_id.desc()).first() 
     if last_user and last_user.user_id:
         return f"{int(last_user.user_id) + 1:03d}"
     return "001"
 
 # Helper: Generate unique account number
-def generate_account_number():
+def generate_account_number(user_id):
     date_part = datetime.now().strftime("%d%m%y")
     random_part = randint(100000, 999999)
-    return f"{date_part}-{random_part}"
+    return f"{date_part}-{user_id}-{random_part}"
 
-# POST /users → Register a new user
 @users_bp.route('', methods=['POST'])
 def register_user():
     data = request.get_json()
@@ -34,34 +33,38 @@ def register_user():
         return jsonify({'error': 'Email already registered'}), 400
 
     hashed_pw = hash_password(data['password'])
-    new_user = User(
-        user_name=data['user_name'],
-        email=data['email'],
-        password=hashed_pw,
-        user_id=generate_user_id(),
-        account_number=generate_account_number() 
-    )
+    try:
+        new_user = User(
+            user_name=data['user_name'],
+            email=data['email'],
+            password=hashed_pw,
+            user_id=generate_user_id(),
+            account_number=generate_account_number()
+        )
 
-    db.session.add(new_user)
-    db.session.commit()
+        db.session.add(new_user)
+        db.session.commit()
 
-    # Tambahkan akun baru yang terhubung dengan user baru
-    new_account = Account(
-        user_id=new_user.user_id,
-        account_number=generate_account_number(),
-        balance=0.0,
-        account_type='basic', 
-        created_at=datetime.utcnow()
-    )
-    db.session.add(new_account)
-    db.session.commit()
+        # Tambahkan akun baru yang terhubung dengan user baru
+        new_account = Account(
+            user_id=new_user.user_id,
+            account_number=generate_account_number(),
+            balance=0.0,
+            account_type='basic', 
+            created_at=datetime.utcnow()
+        )
+        db.session.add(new_account)
+        db.session.commit()
 
-    token = create_access_token(identity=new_user.email)
-    return jsonify({
-        'message': 'User registered successfully',
-        'access_token': token,
-        'user': new_user.to_dict()
-    }), 201
+        token = create_access_token(identity=new_user.email)
+        return jsonify({
+            'message': 'User registered successfully',
+            'access_token': token,
+            'user': new_user.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()  # Rollback jika ada error
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
 
 
 # GET /token

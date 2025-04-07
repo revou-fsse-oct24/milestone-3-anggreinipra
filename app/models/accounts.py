@@ -1,26 +1,32 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, UniqueConstraint
 from app.database import db
+from sqlalchemy.orm import relationship
 
 class Account(db.Model):
     __tablename__ = "accounts"
-    __table_args__ = {'extend_existing': True} 
+    __table_args__ = (UniqueConstraint('user_id', 'account_number', name='_user_account_uc'),)
 
-    id = Column(Integer, primary_key=True, index=True)
-    account_number = Column(String(20), unique=True, nullable=False)  # Format: DDMMYY-XXXXXX
-    account_type = Column(String(50), nullable=False)  # e.g., 'savings', 'checking'
-    balance = Column(Float, nullable=False, default=0.0)
+    # Menggunakan account_number sebagai primary key
+    account_number = Column(String(20), primary_key=True, unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)  # Relasi ke user
+    balance = Column(Float, default=0.0)
+    account_type = Column(String(50), default="basic")
     created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Foreign Key untuk User
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Relasi Many-to-One: Account (Many) -> User (One)
     user = relationship("User", back_populates="accounts")
-
-    # Relasi One-to-Many: Account (One) -> Transaction (Many)
-    transactions = relationship("Transaction", back_populates="account", cascade="all, delete-orphan")
+    
+    # Relasi One-to-Many ke Transaction
+    transactions = relationship('Transaction', back_populates='account')
 
     def __repr__(self):
-        return f"<Account {self.account_number} | Balance: {self.balance}>"
+        return f"<Account {self.account_number} - {self.user_id}>"
+
+    def to_dict(self):
+        return {
+            "account_number": self.account_number,
+            "balance": self.balance,
+            "account_type": self.account_type,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }

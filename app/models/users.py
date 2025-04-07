@@ -7,8 +7,8 @@ class User(db.Model):
     __tablename__ = "users"
     __table_args__ = {'extend_existing': True}
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String(10), unique=True, nullable=False)
+    # Menggunakan user_id sebagai primary key
+    user_id = Column(Integer, primary_key=True, unique=True, nullable=False)
     email = Column(String(120), unique=True, nullable=False)
     user_name = Column(String(100), nullable=False)
     account_number = Column(String(20), unique=True, nullable=False)

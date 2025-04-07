@@ -9,7 +9,6 @@ accounts_bp = Blueprint('accounts', __name__, url_prefix="/accounts")
 # GET /accounts → Retrieve all accounts
 @accounts_bp.route('', methods=['GET'])  # /accounts
 def get_all_accounts():
-    # Optional: support email filter ?email=
     email = request.args.get('email')
     if email:
         user = User.query.filter_by(email=email).first()
