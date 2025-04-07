@@ -1,0 +1,61 @@
+# ====================
+# Python & Flask
+# ====================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.sqlite3
+*.log
+
+# Virtual environment
+venv/
+ENV/
+
+# ====================
+# Secrets & Credentials
+# ====================
+.env
+.env.*
+
+# ====================
+# Flask Migrations (Alembic)
+# ====================
+alembic/versions/
+
+# ====================
+# Docker-related
+# ====================
+*.pid
+*.sock
+*.tar
+db_data/
+docker-compose.override.yml
+
+# ====================
+# IDEs and Editors
+# ====================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ====================
+# OS-specific trash
+# ====================
+.DS_Store
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# ====================
+# Test-related files
+# ====================
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+coverage.*
+*.cover
+.cache
