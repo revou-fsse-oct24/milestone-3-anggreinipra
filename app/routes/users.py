@@ -16,11 +16,11 @@ def generate_user_id():
         return f"{int(last_user.user_id) + 1:03d}"
     return "001"
 
-# Helper: Generate unique account number
-def generate_account_number(user_id):
+# Helper: Generate unique account number (without needing user_id)
+def generate_account_number():
     date_part = datetime.now().strftime("%d%m%y")
     random_part = randint(100000, 999999)
-    return f"{date_part}-{user_id}-{random_part}"
+    return f"{date_part}-{random_part}"
 
 @users_bp.route('', methods=['POST'])
 def register_user():
@@ -34,23 +34,24 @@ def register_user():
 
     hashed_pw = hash_password(data['password'])
     try:
+        # Generate user and account number
         new_user = User(
             user_name=data['user_name'],
             email=data['email'],
             password=hashed_pw,
             user_id=generate_user_id(),
-            account_number=generate_account_number()
+            account_number=generate_account_number() 
         )
 
         db.session.add(new_user)
         db.session.commit()
 
-        # Tambahkan akun baru yang terhubung dengan user baru
+        # Create account with the same account number
         new_account = Account(
             user_id=new_user.user_id,
-            account_number=generate_account_number(),
+            account_number=new_user.account_number, 
             balance=0.0,
-            account_type='basic', 
+            account_type='basic',
             created_at=datetime.utcnow()
         )
         db.session.add(new_account)
@@ -63,8 +64,9 @@ def register_user():
             'user': new_user.to_dict()
         }), 201
     except Exception as e:
-        db.session.rollback()  # Rollback jika ada error
+        db.session.rollback() 
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+
 
 
 # GET /token

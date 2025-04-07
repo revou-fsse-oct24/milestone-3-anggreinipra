@@ -87,30 +87,36 @@ def transfer():
     if from_account.balance < amount:
         return jsonify({'error': 'Insufficient funds'}), 400
 
+    # Lakukan transaksi: transfer_out dari pengirim dan transfer_in ke penerima
     from_account.balance -= amount
     to_account.balance += amount
 
     t1 = Transaction(
         transaction_id=generate_transaction_id(),
-        transaction_type='transfer_out',
+        transaction_type="transfer",
+        is_transfer=True,
+        transfer_type="transfer_out",  # transfer keluar
         amount=amount,
         balance=from_account.balance,
-        account_id=from_account.id,
-        date_transaction=datetime.utcnow()
+        account_number=from_account.account_number,
+        created_at=datetime.utcnow()
     )
     t2 = Transaction(
         transaction_id=generate_transaction_id(),
-        transaction_type='transfer_in',
+        transaction_type="transfer",
+        is_transfer=True,
+        transfer_type="transfer_in",  # transfer masuk
         amount=amount,
         balance=to_account.balance,
-        account_id=to_account.id,
-        date_transaction=datetime.utcnow()
+        account_number=to_account.account_number,
+        created_at=datetime.utcnow()
     )
+
+    # Menyimpan kedua transaksi
     db.session.add_all([t1, t2])
     db.session.commit()
 
     return jsonify({'message': 'Transfer successful', 'from': t1.to_dict(), 'to': t2.to_dict()}), 201
-
 
 # GET /transactions → Get all transactions (optional ?account_number=...)
 @transactions_bp.route('', methods=['GET'])
