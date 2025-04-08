@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from app.models.transactions import Transaction, TransactionType, TransferType
+from datetime import datetime
+
+from app.models.transactions import Transaction, TransactionType
+from app.models.transfers import Transfer
 from app.models.accounts import Account
 from app.database import db
-from datetime import datetime
 
 transactions_bp = Blueprint('transactions', __name__, url_prefix="/transactions")
 
@@ -21,13 +23,15 @@ def deposit():
         return jsonify({'error': 'Account not found'}), 404
 
     account.balance += amount
+
     transaction = Transaction(
-        transaction_type=TransactionType.deposit.value,
+        transaction_type=TransactionType.DEPOSIT,
         amount=amount,
         balance=account.balance,
         account_number=account.account_number,
         created_at=datetime.utcnow()
     )
+
     db.session.add(transaction)
     db.session.commit()
 
@@ -50,13 +54,15 @@ def withdrawal():
         return jsonify({'error': 'Insufficient funds'}), 400
 
     account.balance -= amount
+
     transaction = Transaction(
-        transaction_type=TransactionType.withdrawal.value,
+        transaction_type=TransactionType.WITHDRAWAL,
         amount=amount,
         balance=account.balance,
         account_number=account.account_number,
         created_at=datetime.utcnow()
     )
+
     db.session.add(transaction)
     db.session.commit()
 
@@ -84,29 +90,18 @@ def transfer():
     from_account.balance -= amount
     to_account.balance += amount
 
-    t1 = Transaction(
-        transaction_type=TransactionType.transfer.value,
-        is_transfer=True,
-        transfer_type=TransferType.transfer_out.value,
+    transfer = Transfer(
+        from_account=from_account.account_number,
+        to_account=to_account.account_number,
         amount=amount,
-        balance=from_account.balance,
-        account_number=from_account.account_number,
-        created_at=datetime.utcnow()
-    )
-    t2 = Transaction(
-        transaction_type=TransactionType.transfer.value,
-        is_transfer=True,
-        transfer_type=TransferType.transfer_in.value,
-        amount=amount,
-        balance=to_account.balance,
-        account_number=to_account.account_number,
+        balance=from_account.balance,  # atau kamu bisa bikin logika sendiri utk balance ini
         created_at=datetime.utcnow()
     )
 
-    db.session.add_all([t1, t2])
+    db.session.add(transfer)
     db.session.commit()
 
-    return jsonify({'message': 'Transfer successful', 'from': t1.to_dict(), 'to': t2.to_dict()}), 201
+    return jsonify({'message': 'Transfer successful', 'transfer': transfer.to_dict()}), 201
 
 
 # GET /transactions
@@ -135,3 +130,21 @@ def get_transaction_by_id(transaction_id):
         return jsonify({'error': 'Transaction not found'}), 404
 
     return jsonify(transaction.to_dict()), 200
+
+
+# GET /transactions/transfers
+@transactions_bp.route('/transfers', methods=['GET'])
+@jwt_required()
+def get_all_transfers():
+    transfers = Transfer.query.all()
+    return jsonify([t.to_dict() for t in transfers]), 200
+
+
+# GET /transactions/transfers/<transfer_id>
+@transactions_bp.route('/transfers/<int:transfer_id>', methods=['GET'])
+@jwt_required()
+def get_transfer_by_id(transfer_id):
+    transfer = Transfer.query.filter_by(transfer_id=transfer_id).first()
+    if not transfer:
+        return jsonify({'error': 'Transfer not found'}), 404
+    return jsonify(transfer.to_dict()), 200

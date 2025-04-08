@@ -19,6 +19,9 @@ class Account(db.Model):
     
     # Relasi One-to-Many ke Transaction
     transactions = relationship('Transaction', back_populates='account')
+    transfers_in = relationship("Transfer", foreign_keys="[Transfer.to_account]", back_populates="to_account_rel")
+    transfers_out = relationship("Transfer", foreign_keys="[Transfer.from_account]", back_populates="from_account_rel")
+    
 
     def __repr__(self):
         return f"<Account {self.account_number} - {self.user_id}>"
