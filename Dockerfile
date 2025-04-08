@@ -1,21 +1,21 @@
 # Base image
 FROM python:3.10-slim
 
-# Set working directory
-WORKDIR /
+# Working directory
+WORKDIR /app
 
 # Install pip + uv
 RUN pip install --upgrade pip uv
 
-# Copy requirements and install
+# Copy dependencies
 COPY requirements.txt .
-RUN uv pip install --system --requirements requirements.txt
+RUN uv pip install --system --requirement requirements.txt
 
-# Copy all project files
+# Copy project files
 COPY . .
 
 # Expose port
 EXPOSE 5000
 
-# Run app
+# Start app
 CMD ["uv", "run", "main:create_app", "--reload", "--host=0.0.0.0", "--port", "5000"]
