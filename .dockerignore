@@ -1,11 +1,11 @@
-# Python
+# Python artifacts
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.pyc
 
-# Virtual env
+# Virtual envs
 venv/
 ENV/
 
@@ -18,12 +18,7 @@ ENV/
 .idea/
 .vscode/
 
-# Docker
-Dockerfile
-docker-compose.yml
-docker-compose.override.yml
-
-# Migrations (optional)
+# Alembic (optional)
 alembic/versions/
 
 # Test files & cache
