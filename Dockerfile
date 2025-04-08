@@ -1,8 +1,11 @@
 # Base image
-FROM python:3.10-slim
+FROM python:3.10-slim-bookworm
 
 # Working directory
 WORKDIR /app
+
+# Security patch
+RUN apt-get update && apt-get upgrade -y && apt-get clean
 
 # Install pip + uv
 RUN pip install --upgrade pip uv
@@ -18,4 +21,4 @@ COPY . .
 EXPOSE 5000
 
 # Start app
-CMD ["uv", "run", "main:create_app", "--reload", "--host=0.0.0.0", "--port", "5000"]
+CMD ["uv", "run", "--no-venv", "main:create_app", "--reload", "--host=0.0.0.0", "--port", "5000"]
