@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-WORKDIR /app
+WORKDIR /
 
 # Install pip + uv
 RUN pip install --upgrade pip uv
